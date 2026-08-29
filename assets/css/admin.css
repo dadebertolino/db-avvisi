@@ -1,0 +1,246 @@
+/**
+ * DB Avvisi — stili specifici del plugin.
+ * Estende db-admin-ui.css: qui solo ciò che il design system non copre.
+ */
+
+.dbav-wrap { max-width: 1280px; }
+
+/* ---------- Filtri ---------- */
+.dbav-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+.dbav-filters .db-ui-input,
+.dbav-filters .db-ui-select { width: auto; min-width: 180px; }
+.dbav-filters .db-ui-input[type="search"] { min-width: 260px; }
+
+.dbav-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	color: var(--db-text);
+}
+.dbav-count {
+	color: var(--db-text-muted);
+	font-size: 13px;
+	margin: 0 0 12px;
+}
+
+/* ---------- Elenco a card ---------- */
+.dbav-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+	gap: 16px;
+}
+.dbav-card { margin-bottom: 0; display: flex; flex-direction: column; }
+.dbav-card .db-ui-card-body { flex: 1; }
+.dbav-card-pinned { border-left: 4px solid var(--db-warning); }
+.dbav-card h2 { font-size: 15px; line-height: 1.4; }
+.dbav-card h2 a { text-decoration: none; color: var(--db-text); }
+.dbav-card h2 a:hover { color: var(--db-primary); }
+.dbav-pin { color: var(--db-warning); }
+.dbav-excerpt { color: var(--db-text-muted); font-size: 13px; margin: 0 0 10px; }
+
+.dbav-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px;
+	font-size: 12px;
+	color: var(--db-text-muted);
+}
+.dbav-meta .dashicons { font-size: 15px; width: 15px; height: 15px; vertical-align: text-bottom; }
+.dbav-meta-actions { margin-left: auto; display: flex; gap: 6px; }
+
+/* ---------- Allegati ---------- */
+.dbav-attachments { margin: 0; padding: 0; list-style: none; }
+.dbav-attachments li {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--db-border-light);
+	font-size: 13px;
+}
+.dbav-attachments li:last-child { border-bottom: none; }
+.dbav-attachments a {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	text-decoration: none;
+	word-break: break-word;
+}
+.dbav-attachments .dashicons { color: var(--db-text-muted); }
+.dbav-attachments-lg li { padding: 10px 0; font-size: 14px; }
+.dbav-filesize { color: var(--db-text-light); font-size: 12px; white-space: nowrap; }
+.dbav-remove-file { margin-left: auto; color: var(--db-text-light); text-decoration: none; }
+.dbav-remove-file:hover { color: var(--db-danger); }
+
+/* ---------- Vista singola ---------- */
+.dbav-single-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+	gap: 16px;
+	align-items: start;
+}
+.dbav-content { font-size: 14px; line-height: 1.7; }
+.dbav-content p { margin: 0 0 1em; }
+.dbav-content img { max-width: 100%; height: auto; }
+.dbav-h2 { font-size: 14px; font-weight: 600; margin: 0 0 10px; }
+.dbav-details { margin: 0; padding: 0; list-style: none; }
+.dbav-details li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 0;
+	border-bottom: 1px solid var(--db-border-light);
+	font-size: 13px;
+}
+.dbav-details li:last-child { border-bottom: none; }
+.dbav-details-label { color: var(--db-text-muted); }
+
+/* ---------- Form ---------- */
+.dbav-form-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+	gap: 16px;
+	align-items: start;
+}
+.dbav-form-side { display: flex; flex-direction: column; gap: 16px; }
+.dbav-label {
+	display: block;
+	font-weight: 600;
+	font-size: 13px;
+	margin-bottom: 6px;
+	color: var(--db-text);
+}
+.dbav-req { color: var(--db-danger); }
+.dbav-hint {
+	display: block;
+	margin-top: 6px;
+	font-size: 12px;
+	color: var(--db-text-muted);
+	line-height: 1.5;
+}
+.dbav-hint .dashicons { font-size: 14px; width: 14px; height: 14px; vertical-align: text-bottom; }
+.dbav-submit { margin-bottom: 0; }
+.dbav-submit .db-ui-btn { width: 100%; justify-content: center; }
+.dbav-file-errors:empty { display: none; }
+.dbav-file-errors {
+	margin-top: 10px;
+	padding: 10px 12px;
+	border-radius: var(--db-radius-sm);
+	background: var(--db-danger-light);
+	border: 1px solid var(--db-danger-border);
+	color: var(--db-danger);
+	font-size: 12px;
+}
+.dbav-file-errors p { margin: 0 0 4px; }
+.dbav-file-errors p:last-child { margin: 0; }
+
+/* ---------- Gestione ---------- */
+.dbav-tabs { margin-bottom: 16px; }
+.dbav-bulkbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	flex-wrap: wrap;
+}
+.dbav-bulkbar .db-ui-select { width: auto; min-width: 200px; }
+.dbav-bulkbar .dbav-count { margin: 0 0 0 auto; }
+.dbav-table .dbav-col-check { width: 32px; }
+.dbav-table .dbav-col-actions { width: 190px; white-space: nowrap; }
+.dbav-table .dbav-col-actions .db-ui-btn { margin-right: 2px; }
+.dbav-table .dbav-filesize { display: block; }
+
+/* ---------- Statistiche ---------- */
+.dbav-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+.dbav-stats-grid .db-ui-card { margin-bottom: 0; }
+.dbav-two-cols {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+	gap: 16px;
+	align-items: start;
+}
+.dbav-bars { margin: 0; padding: 0; list-style: none; }
+.dbav-bars li {
+	display: grid;
+	grid-template-columns: 90px 1fr 48px;
+	align-items: center;
+	gap: 10px;
+	padding: 5px 0;
+	font-size: 12px;
+}
+.dbav-bars-label { color: var(--db-text-muted); }
+.dbav-bars-track {
+	background: var(--db-bg-hover);
+	border-radius: 5px;
+	height: 10px;
+	overflow: hidden;
+}
+.dbav-bars-fill {
+	display: block;
+	height: 100%;
+	background: var(--db-primary);
+	border-radius: 5px;
+	min-width: 2px;
+}
+.dbav-bars-value { text-align: right; font-weight: 600; }
+
+/* ---------- Paginazione ---------- */
+.dbav-pagination {
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	margin-top: 16px;
+}
+.dbav-pagination .page-numbers {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 32px;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid var(--db-border);
+	border-radius: var(--db-radius-sm);
+	background: var(--db-bg);
+	text-decoration: none;
+	font-size: 13px;
+	color: var(--db-text);
+}
+.dbav-pagination .page-numbers:hover { background: var(--db-bg-hover); }
+.dbav-pagination .page-numbers.current {
+	background: var(--db-primary);
+	border-color: var(--db-primary);
+	color: #fff;
+	font-weight: 600;
+}
+
+/* ---------- Widget bacheca ---------- */
+.dbav-widget-list { margin: 0 0 12px; padding: 0; list-style: none; }
+.dbav-widget-list li:last-child { border-bottom: none !important; }
+
+/* ---------- Responsive ---------- */
+@media screen and (max-width: 960px) {
+	.dbav-single-grid,
+	.dbav-form-grid { grid-template-columns: 1fr; }
+	.dbav-two-cols { grid-template-columns: 1fr; }
+}
+@media screen and (max-width: 782px) {
+	.dbav-cards { grid-template-columns: 1fr; }
+	.dbav-filters .db-ui-input,
+	.dbav-filters .db-ui-select,
+	.dbav-filters .db-ui-input[type="search"] { width: 100%; min-width: 0; }
+	.dbav-table .dbav-col-actions { width: auto; }
+	.dbav-bars li { grid-template-columns: 70px 1fr 40px; }
+}
