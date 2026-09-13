@@ -7,7 +7,8 @@
  * @var string $tab      Scheda attiva.
  * @var array  $settings Impostazioni.
  * @var array  $result   Elenco avvisi (solo scheda "avvisi").
- * @var array  $args     Filtri (solo scheda "avvisi").
+ * @var array  $args      Filtri (solo scheda "avvisi").
+ * @var array  $perm_args Filtri utenti (solo scheda "permessi").
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $tabs = array(
 	'avvisi'       => __( 'Avvisi', 'db-avvisi' ),
 	'statistiche'  => __( 'Statistiche', 'db-avvisi' ),
+	'permessi'     => __( 'Permessi', 'db-avvisi' ),
 	'impostazioni' => __( 'Impostazioni', 'db-avvisi' ),
 );
 ?>
@@ -50,6 +52,9 @@ $tabs = array(
 	<?php if ( 'statistiche' === $tab ) : ?>
 		<?php include DBAV_DIR . 'templates/admin/stats.php'; ?>
 
+	<?php elseif ( 'permessi' === $tab ) : ?>
+		<?php include DBAV_DIR . 'templates/admin/permissions.php'; ?>
+
 	<?php elseif ( 'impostazioni' === $tab ) : ?>
 		<?php include DBAV_DIR . 'templates/admin/settings.php'; ?>
 
@@ -67,6 +72,14 @@ $tabs = array(
 				<option value=""><?php esc_html_e( 'Tutte le categorie', 'db-avvisi' ); ?></option>
 				<?php foreach ( (array) $settings['categories'] as $cat ) : ?>
 					<option value="<?php echo esc_attr( $cat ); ?>" <?php selected( $args['category'], $cat ); ?>><?php echo esc_html( $cat ); ?></option>
+				<?php endforeach; ?>
+			</select>
+
+			<label class="screen-reader-text" for="dbav-m-board"><?php esc_html_e( 'Bacheca', 'db-avvisi' ); ?></label>
+			<select class="db-ui-select" id="dbav-m-board" name="board">
+				<option value="" <?php selected( $args['board'], '' ); ?>><?php esc_html_e( 'Tutte le bacheche', 'db-avvisi' ); ?></option>
+				<?php foreach ( dbav_boards() as $slug => $board_labels ) : ?>
+					<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $args['board'], $slug ); ?>><?php echo esc_html( $board_labels['choice'] ); ?></option>
 				<?php endforeach; ?>
 			</select>
 
@@ -159,9 +172,16 @@ $tabs = array(
 									<?php if ( $avviso->pinned ) : ?>
 										<span class="dashicons dashicons-sticky dbav-pin" aria-hidden="true" title="<?php esc_attr_e( 'Fissato in alto', 'db-avvisi' ); ?>"></span>
 									<?php endif; ?>
-									<a href="<?php echo esc_url( DBAV_Admin::url( 'dbav-avvisi', array( 'view' => (int) $avviso->id ) ) ); ?>"><strong><?php echo esc_html( $avviso->title ); ?></strong></a>
+									<a href="<?php echo esc_url( DBAV_Admin::view_url( $avviso ) ); ?>"><strong><?php echo esc_html( $avviso->title ); ?></strong></a>
+									<?php $is_sindacale = 'sindacale' === dbav_board( $avviso->board ); ?>
+									<?php if ( $is_sindacale || $avviso->category ) : ?>
+										<br>
+									<?php endif; ?>
+									<?php if ( $is_sindacale ) : ?>
+										<span class="db-ui-badge db-ui-badge-warning"><?php esc_html_e( 'sindacale', 'db-avvisi' ); ?></span>
+									<?php endif; ?>
 									<?php if ( $avviso->category ) : ?>
-										<br><span class="db-ui-badge db-ui-badge-primary"><?php echo esc_html( $avviso->category ); ?></span>
+										<span class="db-ui-badge db-ui-badge-primary"><?php echo esc_html( $avviso->category ); ?></span>
 									<?php endif; ?>
 									<?php if ( $expired ) : ?>
 										<span class="db-ui-badge db-ui-badge-warning"><?php esc_html_e( 'scaduto', 'db-avvisi' ); ?></span>
@@ -226,6 +246,7 @@ $tabs = array(
 						'tab'    => 'avvisi',
 						's'      => $args['search'],
 						'cat'    => $args['category'],
+						'board'  => $args['board'],
 						'status' => $args['status'],
 						'author' => $args['user_id'] ? (int) $args['user_id'] : '',
 					)

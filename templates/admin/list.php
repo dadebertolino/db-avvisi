@@ -6,22 +6,26 @@
  *
  * @var array $result   Risultato query.
  * @var array $args     Filtri applicati.
- * @var array $settings Impostazioni.
+ * @var array  $settings Impostazioni.
+ * @var string $board    Bacheca mostrata ('scuola' o 'sindacale').
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$labels = dbav_boards();
+$labels = $labels[ $board ];
 ?>
 <div class="wrap dbav-wrap">
 
 	<div class="db-ui-page-header">
-		<h1><?php esc_html_e( 'Avvisi', 'db-avvisi' ); ?></h1>
+		<h1><?php echo esc_html( $labels['label'] ); ?></h1>
 		<div class="db-ui-actions">
-			<?php if ( dbav_can_create() ) : ?>
-				<a class="db-ui-btn db-ui-btn-primary" href="<?php echo esc_url( DBAV_Admin::url( 'dbav-nuovo' ) ); ?>">
+			<?php if ( dbav_can_create( $board ) ) : ?>
+				<a class="db-ui-btn db-ui-btn-primary" href="<?php echo esc_url( DBAV_Admin::new_url( $board ) ); ?>">
 					<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
-					<?php esc_html_e( 'Nuovo avviso', 'db-avvisi' ); ?>
+					<?php echo esc_html( $labels['new'] ); ?>
 				</a>
 			<?php endif; ?>
 			<?php if ( dbav_can_manage() ) : ?>
@@ -35,8 +39,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<?php DBAV_Admin::notices(); ?>
 
+	<?php if ( 'sindacale' === $board ) : ?>
+		<p class="dbav-hint"><?php esc_html_e( 'Comunicazioni delle organizzazioni sindacali e della RSU. Pubblica solo chi è stato abilitato dagli amministratori.', 'db-avvisi' ); ?></p>
+	<?php endif; ?>
+
 	<form method="get" class="dbav-filters db-ui-card">
-		<input type="hidden" name="page" value="dbav-avvisi">
+		<input type="hidden" name="page" value="<?php echo esc_attr( DBAV_Admin::board_page( $board ) ); ?>">
 		<label class="screen-reader-text" for="dbav-search"><?php esc_html_e( 'Cerca negli avvisi', 'db-avvisi' ); ?></label>
 		<input class="db-ui-input" type="search" id="dbav-search" name="s" value="<?php echo esc_attr( $args['search'] ); ?>" placeholder="<?php esc_attr_e( 'Cerca per titolo o testo…', 'db-avvisi' ); ?>">
 
@@ -54,7 +62,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</label>
 
 		<button type="submit" class="db-ui-btn db-ui-btn-primary"><?php esc_html_e( 'Filtra', 'db-avvisi' ); ?></button>
-		<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::url( 'dbav-avvisi' ) ); ?>"><?php esc_html_e( 'Azzera', 'db-avvisi' ); ?></a>
+		<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::board_url( $board ) ); ?>"><?php esc_html_e( 'Azzera', 'db-avvisi' ); ?></a>
 	</form>
 
 	<?php if ( empty( $result['items'] ) ) : ?>
@@ -80,7 +88,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php foreach ( $result['items'] as $avviso ) : ?>
 				<?php
 				$files    = DBAV_DB::get_files( $avviso->id );
-				$view_url = DBAV_Admin::url( 'dbav-avvisi', array( 'view' => (int) $avviso->id ) );
+				$view_url = DBAV_Admin::view_url( $avviso );
 				?>
 				<article class="db-ui-card dbav-card<?php echo $avviso->pinned ? ' dbav-card-pinned' : ''; ?>">
 					<div class="db-ui-card-header">
@@ -149,7 +157,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<?php
 		DBAV_Admin::pagination(
 			$result,
-			'dbav-avvisi',
+			DBAV_Admin::board_page( $board ),
 			array_filter(
 				array(
 					's'    => $args['search'],

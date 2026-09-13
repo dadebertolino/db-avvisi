@@ -11,36 +11,44 @@ Nato per il sito dell'**IIS Cigna-Baruffi-Garelli** di Mondovì, ma non contiene
 
 ## Cosa fa
 
-Il plugin aggiunge un menu **Avvisi** in bacheca, subito sotto la voce Bacheca, con tre pagine:
+Il plugin aggiunge un menu **Avvisi** in bacheca, subito sotto la voce Bacheca, con queste pagine:
 
-1. **Tutti gli avvisi** — elenco a schede di ciò che è stato pubblicato, con ricerca, filtro per categoria, filtro "solo i miei" e apertura del singolo avviso. Visibile a **tutti gli utenti loggati**.
-2. **Nuovo avviso** — form di pubblicazione con titolo, testo (editor), categoria, data di scadenza facoltativa e allegati multipli. Aperto per impostazione predefinita a **ogni utente loggato** (restringibile dalle Impostazioni); ciascuno può poi modificare o eliminare i propri avvisi.
-3. **Gestione e statistiche** — riservata agli amministratori, con tre schede:
-   - **Avvisi**: tabella di tutti gli avvisi (compresi nascosti e scaduti), filtri per stato/categoria/autore, azioni singole (nascondi, fissa in alto, modifica, elimina) e azioni di gruppo.
+1. **Tutti gli avvisi** — elenco a schede di ciò che è stato pubblicato dalla scuola, con ricerca, filtro per categoria, filtro "solo i miei" e apertura del singolo avviso. Visibile a **tutti gli utenti loggati**.
+2. **Bacheca sindacale** — elenco separato per le comunicazioni delle organizzazioni sindacali e della RSU, con le stesse funzioni. Visibile a **tutti gli utenti loggati**; pubblica solo chi è **abilitato uno per uno**.
+3. **Nuovo avviso** — form di pubblicazione con titolo, testo (editor), categoria, data di scadenza facoltativa e allegati multipli; chi può pubblicare in entrambe le bacheche sceglie dove. Aperto per impostazione predefinita a **ogni utente loggato** (restringibile dalla scheda Permessi); ciascuno può poi modificare o eliminare i propri avvisi.
+4. **Gestione e statistiche** — riservata agli amministratori, con quattro schede:
+   - **Avvisi**: tabella di tutti gli avvisi di entrambe le bacheche (compresi nascosti e scaduti), filtri per bacheca/stato/categoria/autore, azioni singole (nascondi, fissa in alto, modifica, elimina) e azioni di gruppo.
    - **Statistiche**: numeri generali, tabella *chi ha caricato cosa* (avvisi, allegati, spazio occupato, download, letture, ultimo avviso per ogni utente), andamento mensile, distribuzione per categoria, allegati più scaricati, avvisi più letti, esportazione CSV.
-   - **Impostazioni**: chi può pubblicare, categorie, limiti sugli allegati, estensioni ammesse, avvisi per pagina, scadenza proposta, email di notifica.
+   - **Permessi**: regola generale su chi può pubblicare (per ruolo), eccezioni utente per utente e abilitazione alla bacheca sindacale, con ricerca e filtri.
+   - **Impostazioni**: categorie, limiti sugli allegati, estensioni ammesse, avvisi per pagina, scadenza proposta, email di notifica.
 
-In più, un widget **"Avvisi recenti"** nella home della bacheca mostra gli ultimi cinque avvisi a chi entra nel sito.
+In più, nella home della bacheca il widget **"Avvisi recenti"** mostra gli ultimi cinque avvisi della scuola, e il widget **"Bacheca sindacale"** gli ultimi cinque avvisi sindacali (compare quando ce ne sono, oppure a chi è abilitato a pubblicarli).
 
 ## Chi può fare cosa
 
 | Azione | Chi |
 |--------|-----|
 | Vedere gli avvisi e scaricare gli allegati | Qualsiasi utente **loggato** |
-| Pubblicare un avviso | Qualsiasi utente **loggato** (predefinito), oppure solo da Collaboratore / Autore / Editore in su, a scelta nelle **Impostazioni** |
+| Pubblicare un avviso | Qualsiasi utente **loggato** (predefinito), oppure solo da Collaboratore / Autore / Editore in su; in più ogni utente può essere **autorizzato o bloccato singolarmente** nella scheda **Permessi** |
+| Pubblicare nella bacheca sindacale | Solo gli utenti **abilitati singolarmente** nella scheda **Permessi** (es. RSU), più gli amministratori |
 | Modificare / eliminare un avviso | L'**autore** dell'avviso e gli amministratori |
 | Nascondere, fissare in alto, azioni di gruppo | Solo **amministratori** |
 | Statistiche, impostazioni, export CSV | Solo **amministratori** |
 
 Chi non ha effettuato l'accesso non vede il menu, non raggiunge le pagine e non scarica gli allegati.
 
+Per la pubblicazione vale quest'ordine: gli amministratori possono sempre; poi conta l'eventuale **eccezione personale** (può / non può pubblicare); se non c'è, decide la **regola generale** per ruolo. Chi non può pubblicare non può nemmeno modificare o eliminare i propri avvisi. Le eccezioni sono salvate come opzioni utente e vengono cancellate insieme all'utente.
+
+Per la **bacheca sindacale** la regola per ruolo non vale: serve l'abilitazione esplicita dell'utente. Gli amministratori possono comunque moderare gli avvisi sindacali come tutti gli altri (nascondere, fissare, modificare, eliminare). Un avviso resta nella bacheca in cui è stato pubblicato.
+
 I permessi sono modificabili via filtro senza toccare il codice del plugin:
 
 ```php
-// Esempio: consentire la pubblicazione solo a chi può scrivere articoli.
-add_filter( 'dbav_can_create', function () {
-	return current_user_can( 'edit_posts' );
-} );
+// Esempio: nella bacheca della scuola pubblica solo chi può scrivere articoli.
+// Il filtro riceve anche la bacheca ('scuola' o 'sindacale').
+add_filter( 'dbav_can_create', function ( $allowed, $board ) {
+	return 'scuola' === $board ? current_user_can( 'edit_posts' ) : $allowed;
+}, 10, 2 );
 
 // Esempio: affidare la gestione a un ruolo diverso da amministratore.
 add_filter( 'dbav_manage_capability', function () {
@@ -103,7 +111,7 @@ db-avvisi/
 │   ├── class-admin.php         Menu, asset, rendering pagine
 │   ├── class-dashboard-widget.php
 │   └── class-updater.php       Aggiornamenti da GitHub Releases
-├── templates/admin/            list, single, form, manage, stats, settings
+├── templates/admin/            list, single, form, manage, stats, permissions, settings
 └── assets/                     db-admin-ui.css + CSS/JS del plugin
 ```
 
@@ -114,6 +122,11 @@ Tabelle create: `wp_dbav_avvisi` e `wp_dbav_files`.
 Etichette esplicite su ogni campo, `screen-reader-text` dove l'etichetta è visivamente ridondante, `aria-label` sui pulsanti a sola icona, focus visibile ereditato dal design system, nessun contenuto che si muove da solo. La tabella di gestione resta navigabile da tastiera e le conferme di eliminazione sono dialoghi nativi del browser.
 
 ## Changelog
+
+### 1.2.0
+- Nuova **Bacheca sindacale**: voce di menu ed elenco separati, widget dedicato, filtro per bacheca in gestione, email di notifica con oggetto "Nuovo avviso sindacale". Pubblica solo chi è abilitato uno per uno; gli amministratori moderano come per gli altri avvisi. Gli avvisi esistenti restano nella bacheca della scuola.
+- Nuova scheda **Permessi** in Gestione: la regola per ruolo si sposta qui dalle Impostazioni, e ogni utente può essere autorizzato o bloccato singolarmente.
+- Il filtro `dbav_can_create` riceve ora anche la bacheca come secondo argomento: chi lo usa con un solo argomento lo applica a entrambe le bacheche.
 
 ### 1.1.0
 - Nuova impostazione **Chi può pubblicare**: tutti gli utenti loggati (predefinito, come prima), oppure solo da Collaboratore, Autore o Editore in su.

@@ -21,6 +21,8 @@ class DBAV_Actions {
 		add_action( 'admin_post_dbav_toggle', array( __CLASS__, 'toggle' ) );
 		add_action( 'admin_post_dbav_bulk', array( __CLASS__, 'bulk' ) );
 		add_action( 'admin_post_dbav_settings', array( __CLASS__, 'settings' ) );
+		add_action( 'admin_post_dbav_permissions_role', array( __CLASS__, 'permissions_role' ) );
+		add_action( 'admin_post_dbav_permissions_users', array( __CLASS__, 'permissions_users' ) );
 		add_action( 'admin_post_dbav_download', array( 'DBAV_Files', 'handle_download' ) );
 		add_action( 'admin_post_nopriv_dbav_download', array( 'DBAV_Files', 'handle_download' ) );
 		add_action( 'admin_post_dbav_export_stats', array( 'DBAV_Stats', 'export_csv' ) );
@@ -80,9 +82,6 @@ class DBAV_Actions {
 	 * Crea o aggiorna un avviso, con relativi allegati.
 	 */
 	public static function save() {
-		if ( ! dbav_can_create() ) {
-			wp_die( esc_html__( 'Non hai i permessi per pubblicare avvisi.', 'db-avvisi' ), '', array( 'response' => 403 ) );
-		}
 		check_admin_referer( 'dbav_save_avviso' );
 
 		$id     = isset( $_POST['avviso_id'] ) ? (int) $_POST['avviso_id'] : 0;
@@ -91,8 +90,18 @@ class DBAV_Actions {
 		if ( $id && ! $avviso ) {
 			wp_die( esc_html__( 'Avviso non trovato.', 'db-avvisi' ), '', array( 'response' => 404 ) );
 		}
-		if ( $avviso && ! dbav_can_edit( $avviso ) ) {
-			wp_die( esc_html__( 'Non hai i permessi per modificare questo avviso.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+
+		// La bacheca si sceglie solo alla creazione: in modifica resta quella dell'avviso.
+		if ( $avviso ) {
+			if ( ! dbav_can_edit( $avviso ) ) {
+				wp_die( esc_html__( 'Non hai i permessi per modificare questo avviso.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+			}
+			$board = dbav_board( $avviso->board );
+		} else {
+			$board = isset( $_POST['board'] ) ? dbav_board( sanitize_key( wp_unslash( $_POST['board'] ) ) ) : 'scuola';
+			if ( ! dbav_can_create( $board ) ) {
+				wp_die( esc_html__( 'Non hai i permessi per pubblicare in questa bacheca.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+			}
 		}
 
 		$title   = isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '';
@@ -111,6 +120,8 @@ class DBAV_Actions {
 			$back_args = array( 'page' => 'dbav-nuovo' );
 			if ( $id ) {
 				$back_args['edit'] = $id;
+			} else {
+				$back_args['board'] = $board;
 			}
 			self::redirect( $back_args );
 		}
@@ -135,13 +146,14 @@ class DBAV_Actions {
 			$created   = false;
 		} else {
 			$data['user_id'] = get_current_user_id();
+			$data['board']   = $board;
 			$data['status']  = isset( $data['status'] ) ? $data['status'] : 'published';
 			$avviso_id       = DBAV_DB::insert( $data );
 			$created         = true;
 
 			if ( ! $avviso_id ) {
 				self::notice( 'error', __( 'Salvataggio non riuscito: riprova.', 'db-avvisi' ) );
-				self::redirect( array( 'page' => 'dbav-nuovo' ) );
+				self::redirect( array( 'page' => 'dbav-nuovo', 'board' => $board ) );
 			}
 		}
 
@@ -183,7 +195,7 @@ class DBAV_Actions {
 			self::notice( 'success', __( 'Avviso aggiornato.', 'db-avvisi' ) );
 		}
 
-		self::redirect( array( 'page' => 'dbav-avvisi', 'view' => $avviso_id ) );
+		self::redirect( array( 'page' => DBAV_Admin::board_page( $board ), 'view' => $avviso_id ) );
 	}
 
 	/**
@@ -204,8 +216,11 @@ class DBAV_Actions {
 		DBAV_DB::delete( $id );
 		self::notice( 'success', __( 'Avviso eliminato definitivamente.', 'db-avvisi' ) );
 
-		$back = isset( $_REQUEST['back'] ) ? sanitize_key( wp_unslash( $_REQUEST['back'] ) ) : 'dbav-avvisi';
-		self::redirect( array( 'page' => in_array( $back, array( 'dbav-avvisi', 'dbav-gestione' ), true ) ? $back : 'dbav-avvisi' ) );
+		$back = isset( $_REQUEST['back'] ) ? sanitize_key( wp_unslash( $_REQUEST['back'] ) ) : '';
+		if ( ! in_array( $back, array( 'dbav-avvisi', 'dbav-sindacale', 'dbav-gestione' ), true ) ) {
+			$back = DBAV_Admin::board_page( $avviso->board );
+		}
+		self::redirect( array( 'page' => $back ) );
 	}
 
 	/**
@@ -309,7 +324,7 @@ class DBAV_Actions {
 		check_admin_referer( 'dbav_settings' );
 
 		$input = array();
-		foreach ( array( 'categories', 'max_file_mb', 'max_files', 'per_page', 'allowed_ext', 'notify_emails', 'default_days', 'create_cap' ) as $key ) {
+		foreach ( array( 'categories', 'max_file_mb', 'max_files', 'per_page', 'allowed_ext', 'notify_emails', 'default_days' ) as $key ) {
 			if ( isset( $_POST[ $key ] ) ) {
 				$input[ $key ] = is_array( $_POST[ $key ] )
 					? array_map( 'sanitize_text_field', wp_unslash( $_POST[ $key ] ) )
@@ -322,6 +337,92 @@ class DBAV_Actions {
 		delete_transient( 'dbav_protection_check' );
 		self::notice( 'success', __( 'Impostazioni salvate.', 'db-avvisi' ) );
 		self::redirect( array( 'page' => 'dbav-gestione', 'tab' => 'impostazioni' ) );
+	}
+
+	/**
+	 * Salva la regola generale su chi può pubblicare.
+	 */
+	public static function permissions_role() {
+		if ( ! dbav_can_manage() ) {
+			wp_die( esc_html__( 'Permessi insufficienti.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'dbav_permissions_role' );
+
+		$cap = isset( $_POST['create_cap'] ) ? sanitize_key( wp_unslash( $_POST['create_cap'] ) ) : '';
+		DBAV_Settings::save( array( 'create_cap' => $cap ) );
+
+		self::notice( 'success', __( 'Regola generale salvata.', 'db-avvisi' ) );
+		self::redirect( array( 'page' => 'dbav-gestione', 'tab' => 'permessi' ) );
+	}
+
+	/**
+	 * Salva le eccezioni per utente della pagina di tabella inviata.
+	 */
+	public static function permissions_users() {
+		if ( ! dbav_can_manage() ) {
+			wp_die( esc_html__( 'Permessi insufficienti.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'dbav_permissions_users' );
+
+		// Campo del form => bacheca, user option, valori ammessi.
+		$fields        = array(
+			'publish'   => array( 'scuola', 'dbav_publish', array( '', 'allow', 'deny' ) ),
+			'sindacale' => array( 'sindacale', 'dbav_publish_sindacale', array( '', 'allow' ) ),
+		);
+		$changed_users = array();
+
+		foreach ( $fields as $field => $conf ) {
+			list( $board, $option, $allowed_values ) = $conf;
+
+			$input = ( isset( $_POST[ $field ] ) && is_array( $_POST[ $field ] ) ) ? wp_unslash( $_POST[ $field ] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validato valore per valore.
+
+			foreach ( $input as $user_id => $value ) {
+				$user_id = (int) $user_id;
+				$value   = is_string( $value ) ? sanitize_key( $value ) : null;
+
+				// Chi gestisce può sempre pubblicare: niente eccezioni su di lui.
+				if ( $user_id <= 0 || ! get_userdata( $user_id ) || user_can( $user_id, dbav_manage_cap() ) ) {
+					continue;
+				}
+				if ( ! in_array( $value, $allowed_values, true ) || dbav_publish_override( $user_id, $board ) === $value ) {
+					continue;
+				}
+
+				if ( '' === $value ) {
+					delete_user_option( $user_id, $option );
+				} else {
+					update_user_option( $user_id, $option, $value );
+				}
+				$changed_users[ $user_id ] = true;
+			}
+		}
+
+		$changed = count( $changed_users );
+
+		if ( $changed ) {
+			self::notice(
+				'success',
+				sprintf(
+					/* translators: %d: numero di utenti modificati. */
+					_n( 'Permesso aggiornato per %d utente.', 'Permesso aggiornato per %d utenti.', $changed, 'db-avvisi' ),
+					$changed
+				)
+			);
+		} else {
+			self::notice( 'info', __( 'Nessuna modifica da salvare.', 'db-avvisi' ) );
+		}
+
+		// Torna alla stessa vista filtrata (add_query_arg non codifica i valori).
+		$back = array(
+			'page' => 'dbav-gestione',
+			'tab'  => 'permessi',
+		);
+		foreach ( array( 's', 'role', 'show', 'paged' ) as $key ) {
+			if ( ! empty( $_POST[ 'back_' . $key ] ) ) {
+				$back[ $key ] = rawurlencode( sanitize_text_field( wp_unslash( $_POST[ 'back_' . $key ] ) ) );
+			}
+		}
+		self::redirect( $back );
 	}
 
 	/**
@@ -342,20 +443,16 @@ class DBAV_Actions {
 
 		$user   = get_userdata( $avviso->user_id );
 		$author = $user ? $user->display_name : __( 'Utente sconosciuto', 'db-avvisi' );
-		$link   = add_query_arg(
-			array(
-				'page' => 'dbav-avvisi',
-				'view' => $avviso_id,
-			),
-			admin_url( 'admin.php' )
-		);
+		$link   = DBAV_Admin::view_url( $avviso );
+		$site   = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 
-		$subject = sprintf(
+		if ( 'sindacale' === dbav_board( $avviso->board ) ) {
 			/* translators: 1: nome del sito, 2: titolo avviso. */
-			__( '[%1$s] Nuovo avviso: %2$s', 'db-avvisi' ),
-			wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
-			$avviso->title
-		);
+			$subject = sprintf( __( '[%1$s] Nuovo avviso sindacale: %2$s', 'db-avvisi' ), $site, $avviso->title );
+		} else {
+			/* translators: 1: nome del sito, 2: titolo avviso. */
+			$subject = sprintf( __( '[%1$s] Nuovo avviso: %2$s', 'db-avvisi' ), $site, $avviso->title );
+		}
 
 		$body = sprintf(
 			/* translators: 1: autore, 2: titolo, 3: link. */

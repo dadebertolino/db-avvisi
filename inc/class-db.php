@@ -45,6 +45,7 @@ class DBAV_DB {
 			title varchar(255) NOT NULL,
 			content longtext NOT NULL,
 			category varchar(100) NOT NULL DEFAULT '',
+			board varchar(20) NOT NULL DEFAULT 'scuola',
 			user_id bigint(20) unsigned NOT NULL,
 			status varchar(20) NOT NULL DEFAULT 'published',
 			pinned tinyint(1) NOT NULL DEFAULT 0,
@@ -56,6 +57,7 @@ class DBAV_DB {
 			KEY user_id (user_id),
 			KEY status (status),
 			KEY category (category),
+			KEY board (board),
 			KEY created_at (created_at)
 		) $charset;";
 
@@ -107,6 +109,7 @@ class DBAV_DB {
 			'title'      => $data['title'],
 			'content'    => $data['content'],
 			'category'   => isset( $data['category'] ) ? $data['category'] : '',
+			'board'      => isset( $data['board'] ) ? dbav_board( $data['board'] ) : 'scuola',
 			'user_id'    => isset( $data['user_id'] ) ? (int) $data['user_id'] : get_current_user_id(),
 			'status'     => isset( $data['status'] ) ? $data['status'] : 'published',
 			'pinned'     => ! empty( $data['pinned'] ) ? 1 : 0,
@@ -115,7 +118,7 @@ class DBAV_DB {
 			'updated_at' => $now,
 		);
 
-		$ok = $wpdb->insert( self::table(), $row, array( '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s', '%s' ) );
+		$ok = $wpdb->insert( self::table(), $row, array( '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%s', '%s', '%s' ) );
 		if ( ! $ok ) {
 			return 0;
 		}
@@ -199,8 +202,8 @@ class DBAV_DB {
 	/**
 	 * Query elenco avvisi.
 	 *
-	 * Argomenti: search, category, user_id, status ('' = tutti), include_expired,
-	 * orderby, order, per_page, page.
+	 * Argomenti: search, category, board ('' = tutte), user_id, status ('' = tutti),
+	 * include_expired, orderby, order, per_page, page.
 	 *
 	 * @param array $args Filtri.
 	 * @return array { items: object[], total: int, pages: int, page: int }
@@ -213,6 +216,7 @@ class DBAV_DB {
 			array(
 				'search'          => '',
 				'category'        => '',
+				'board'           => '',
 				'user_id'         => 0,
 				'status'          => 'published',
 				'include_expired' => false,
@@ -235,6 +239,11 @@ class DBAV_DB {
 		if ( '' !== $args['category'] ) {
 			$where[]  = 'category = %s';
 			$params[] = $args['category'];
+		}
+
+		if ( '' !== $args['board'] ) {
+			$where[]  = 'board = %s';
+			$params[] = dbav_board( $args['board'] );
 		}
 
 		if ( $args['user_id'] ) {

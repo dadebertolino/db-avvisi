@@ -36,6 +36,8 @@ $wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'dbav_files' ); // phpcs
 $wpdb->query( 'DROP TABLE IF EXISTS ' . $wpdb->prefix . 'dbav_avvisi' ); // phpcs:ignore WordPress.DB
 
 // Opzioni e transient.
+delete_metadata( 'user', 0, $wpdb->get_blog_prefix() . 'dbav_publish', '', true );
+delete_metadata( 'user', 0, $wpdb->get_blog_prefix() . 'dbav_publish_sindacale', '', true );
 delete_option( 'dbav_settings' );
 delete_option( 'dbav_version' );
 delete_transient( 'dbav_protection_check' );

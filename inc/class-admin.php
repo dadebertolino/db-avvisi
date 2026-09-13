@@ -53,7 +53,16 @@ class DBAV_Admin {
 			array( __CLASS__, 'render_list' )
 		);
 
-		if ( dbav_can_create() ) {
+		self::$hooks['sindacale'] = add_submenu_page(
+			'dbav-avvisi',
+			__( 'Bacheca sindacale', 'db-avvisi' ),
+			__( 'Bacheca sindacale', 'db-avvisi' ),
+			'read',
+			'dbav-sindacale',
+			array( __CLASS__, 'render_list_sindacale' )
+		);
+
+		if ( dbav_creatable_boards() ) {
 			self::$hooks['new'] = add_submenu_page(
 				'dbav-avvisi',
 				__( 'Nuovo avviso', 'db-avvisi' ),
@@ -177,12 +186,70 @@ class DBAV_Admin {
 	}
 
 	/**
-	 * Elenco avvisi (e vista singola).
+	 * Slug della pagina elenco di una bacheca.
+	 *
+	 * @param string $board Bacheca.
+	 * @return string
+	 */
+	public static function board_page( $board ) {
+		return 'sindacale' === dbav_board( $board ) ? 'dbav-sindacale' : 'dbav-avvisi';
+	}
+
+	/**
+	 * URL dell'elenco di una bacheca.
+	 *
+	 * @param string $board Bacheca.
+	 * @param array  $args  Query args aggiuntivi.
+	 * @return string
+	 */
+	public static function board_url( $board, array $args = array() ) {
+		return self::url( self::board_page( $board ), $args );
+	}
+
+	/**
+	 * URL della vista singola di un avviso, dentro la sua bacheca.
+	 *
+	 * @param object $avviso Record avviso.
+	 * @return string
+	 */
+	public static function view_url( $avviso ) {
+		return self::board_url( isset( $avviso->board ) ? $avviso->board : 'scuola', array( 'view' => (int) $avviso->id ) );
+	}
+
+	/**
+	 * URL del form di pubblicazione per una bacheca.
+	 *
+	 * @param string $board Bacheca.
+	 * @return string
+	 */
+	public static function new_url( $board ) {
+		return self::url( 'dbav-nuovo', array( 'board' => dbav_board( $board ) ) );
+	}
+
+	/**
+	 * Elenco della bacheca della scuola (e vista singola).
 	 */
 	public static function render_list() {
+		self::render_board( 'scuola' );
+	}
+
+	/**
+	 * Elenco della bacheca sindacale (e vista singola).
+	 */
+	public static function render_list_sindacale() {
+		self::render_board( 'sindacale' );
+	}
+
+	/**
+	 * Elenco avvisi di una bacheca, oppure il singolo avviso richiesto.
+	 *
+	 * @param string $board Bacheca.
+	 */
+	private static function render_board( $board ) {
 		if ( ! dbav_can_view() ) {
 			wp_die( esc_html__( 'Non hai i permessi per vedere gli avvisi.', 'db-avvisi' ), '', array( 'response' => 403 ) );
 		}
+		$board = dbav_board( $board );
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- solo filtri di lettura.
 		$view_id = isset( $_GET['view'] ) ? (int) $_GET['view'] : 0;
@@ -190,10 +257,11 @@ class DBAV_Admin {
 		if ( $view_id ) {
 			$avviso = DBAV_DB::get( $view_id );
 			if ( ! $avviso || ( 'published' !== $avviso->status && ! dbav_can_edit( $avviso ) ) ) {
+				$labels = dbav_boards();
 				echo '<div class="wrap dbav-wrap">';
 				self::notices();
 				echo '<div class="db-ui-empty"><span class="db-ui-empty-icon" aria-hidden="true">🔍</span><p class="db-ui-empty-text">' . esc_html__( 'Avviso non disponibile.', 'db-avvisi' ) . '</p></div>';
-				echo '<p><a class="db-ui-btn" href="' . esc_url( self::url( 'dbav-avvisi' ) ) . '">' . esc_html__( 'Torna agli avvisi', 'db-avvisi' ) . '</a></p></div>';
+				echo '<p><a class="db-ui-btn" href="' . esc_url( self::board_url( $board ) ) . '">' . esc_html( $labels[ $board ]['back'] ) . '</a></p></div>';
 				return;
 			}
 
@@ -210,6 +278,7 @@ class DBAV_Admin {
 		$args     = array(
 			'search'   => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
 			'category' => isset( $_GET['cat'] ) ? sanitize_text_field( wp_unslash( $_GET['cat'] ) ) : '',
+			'board'    => $board,
 			'user_id'  => ( isset( $_GET['mine'] ) && '1' === $_GET['mine'] ) ? get_current_user_id() : 0,
 			'status'   => 'published',
 			'per_page' => (int) $settings['per_page'],
@@ -225,17 +294,26 @@ class DBAV_Admin {
 	 * Form nuovo avviso / modifica.
 	 */
 	public static function render_form() {
-		if ( ! dbav_can_create() ) {
-			wp_die( esc_html__( 'Non hai i permessi per pubblicare avvisi.', 'db-avvisi' ), '', array( 'response' => 403 ) );
-		}
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- solo lettura dei parametri di pagina.
 		$edit_id = isset( $_GET['edit'] ) ? (int) $_GET['edit'] : 0;
 		$avviso  = $edit_id ? DBAV_DB::get( $edit_id ) : null;
 
-		if ( $edit_id && ( ! $avviso || ! dbav_can_edit( $avviso ) ) ) {
-			wp_die( esc_html__( 'Non hai i permessi per modificare questo avviso.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+		if ( $edit_id ) {
+			if ( ! $avviso || ! dbav_can_edit( $avviso ) ) {
+				wp_die( esc_html__( 'Non hai i permessi per modificare questo avviso.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+			}
+			// La bacheca di un avviso esistente non si cambia.
+			$board            = dbav_board( $avviso->board );
+			$boards_available = array( $board );
+		} else {
+			$boards_available = dbav_creatable_boards();
+			if ( ! $boards_available ) {
+				wp_die( esc_html__( 'Non hai i permessi per pubblicare avvisi.', 'db-avvisi' ), '', array( 'response' => 403 ) );
+			}
+			$requested = isset( $_GET['board'] ) ? dbav_board( sanitize_key( wp_unslash( $_GET['board'] ) ) ) : 'scuola';
+			$board     = in_array( $requested, $boards_available, true ) ? $requested : $boards_available[0];
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$settings = DBAV_Settings::all();
 		$files    = $avviso ? DBAV_DB::get_files( $avviso->id ) : array();
@@ -252,7 +330,7 @@ class DBAV_Admin {
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- solo navigazione fra schede.
 		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'avvisi';
-		if ( ! in_array( $tab, array( 'avvisi', 'statistiche', 'impostazioni' ), true ) ) {
+		if ( ! in_array( $tab, array( 'avvisi', 'statistiche', 'permessi', 'impostazioni' ), true ) ) {
 			$tab = 'avvisi';
 		}
 
@@ -262,6 +340,7 @@ class DBAV_Admin {
 			$args = array(
 				'search'          => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
 				'category'        => isset( $_GET['cat'] ) ? sanitize_text_field( wp_unslash( $_GET['cat'] ) ) : '',
+				'board'           => isset( $_GET['board'] ) ? sanitize_key( wp_unslash( $_GET['board'] ) ) : '',
 				'user_id'         => isset( $_GET['author'] ) ? (int) $_GET['author'] : 0,
 				'status'          => isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '',
 				'include_expired' => true,
@@ -271,11 +350,81 @@ class DBAV_Admin {
 			if ( ! in_array( $args['status'], array( '', 'published', 'hidden' ), true ) ) {
 				$args['status'] = '';
 			}
+			if ( ! in_array( $args['board'], array( '', 'scuola', 'sindacale' ), true ) ) {
+				$args['board'] = '';
+			}
 			$result = DBAV_DB::query( $args );
+		}
+
+		if ( 'permessi' === $tab ) {
+			$perm_args = array(
+				'search' => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '',
+				'role'   => isset( $_GET['role'] ) ? sanitize_key( wp_unslash( $_GET['role'] ) ) : '',
+				'show'   => ( isset( $_GET['show'] ) && in_array( $_GET['show'], array( 'exceptions', 'sindacale' ), true ) ) ? sanitize_key( wp_unslash( $_GET['show'] ) ) : '',
+			);
+			$page   = isset( $_GET['paged'] ) ? max( 1, (int) $_GET['paged'] ) : 1;
+			$result = self::permissions_users( $perm_args, $page );
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		include DBAV_DIR . 'templates/admin/manage.php';
+	}
+
+	/**
+	 * Utenti del sito per la scheda permessi.
+	 *
+	 * @param array $perm_args Filtri { search, role, show }; il ruolo non valido viene azzerato.
+	 * @param int   $page      Pagina corrente.
+	 * @return array { items: WP_User[], total: int, pages: int, page: int }
+	 */
+	private static function permissions_users( array &$perm_args, $page ) {
+		global $wpdb;
+		$per_page = 20;
+
+		if ( '' !== $perm_args['role'] && ! array_key_exists( $perm_args['role'], wp_roles()->get_names() ) ) {
+			$perm_args['role'] = '';
+		}
+
+		$query_args = array(
+			'number'      => $per_page,
+			'paged'       => $page,
+			'orderby'     => 'display_name',
+			'order'       => 'ASC',
+			'count_total' => true,
+		);
+		if ( '' !== $perm_args['search'] ) {
+			$query_args['search']         = '*' . $perm_args['search'] . '*';
+			$query_args['search_columns'] = array( 'user_login', 'user_email', 'display_name' );
+		}
+		if ( '' !== $perm_args['role'] ) {
+			$query_args['role'] = $perm_args['role'];
+		}
+		if ( 'exceptions' === $perm_args['show'] ) {
+			$query_args['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery
+				array(
+					'key'     => $wpdb->get_blog_prefix() . 'dbav_publish',
+					'value'   => array( 'allow', 'deny' ),
+					'compare' => 'IN',
+				),
+			);
+		} elseif ( 'sindacale' === $perm_args['show'] ) {
+			$query_args['meta_query'] = array( // phpcs:ignore WordPress.DB.SlowDBQuery
+				array(
+					'key'   => $wpdb->get_blog_prefix() . 'dbav_publish_sindacale',
+					'value' => 'allow',
+				),
+			);
+		}
+
+		$query = new WP_User_Query( $query_args );
+		$total = (int) $query->get_total();
+
+		return array(
+			'items' => $query->get_results(),
+			'total' => $total,
+			'pages' => (int) ceil( $total / $per_page ),
+			'page'  => $page,
+		);
 	}
 
 	/**

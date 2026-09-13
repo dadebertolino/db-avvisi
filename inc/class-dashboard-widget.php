@@ -1,6 +1,6 @@
 <?php
 /**
- * Widget "Avvisi" nella home della bacheca.
+ * Widget in bacheca: avvisi recenti della scuola e della bacheca sindacale.
  *
  * @package DB_Avvisi
  */
@@ -12,33 +12,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 class DBAV_Dashboard_Widget {
 
 	/**
-	 * Registra il widget.
+	 * Registra i widget.
 	 */
 	public static function init() {
 		add_action( 'wp_dashboard_setup', array( __CLASS__, 'register' ) );
 	}
 
 	/**
-	 * Aggiunge il widget solo per chi può vedere gli avvisi.
+	 * Aggiunge i widget solo per chi può vedere gli avvisi.
+	 * Quello sindacale compare se c'è qualcosa da leggere, oppure a chi è abilitato a pubblicarvi.
 	 */
 	public static function register() {
 		if ( ! dbav_can_view() ) {
 			return;
 		}
 
+		$labels = dbav_boards();
+
 		wp_add_dashboard_widget(
 			'dbav_dashboard_widget',
-			__( 'Avvisi recenti', 'db-avvisi' ),
-			array( __CLASS__, 'render' )
+			$labels['scuola']['widget'],
+			array( __CLASS__, 'render' ),
+			null,
+			array( 'board' => 'scuola' )
 		);
+
+		$sindacale = DBAV_DB::query(
+			array(
+				'board'    => 'sindacale',
+				'status'   => 'published',
+				'per_page' => 1,
+			)
+		);
+		if ( $sindacale['total'] > 0 || ( ! dbav_can_manage() && dbav_can_create( 'sindacale' ) ) ) {
+			wp_add_dashboard_widget(
+				'dbav_dashboard_widget_sindacale',
+				$labels['sindacale']['widget'],
+				array( __CLASS__, 'render' ),
+				null,
+				array( 'board' => 'sindacale' )
+			);
+		}
 	}
 
 	/**
 	 * Contenuto del widget.
+	 *
+	 * @param mixed $object Non usato (passato da WordPress).
+	 * @param array $box    Dati del widget; 'args' contiene la bacheca.
 	 */
-	public static function render() {
+	public static function render( $object = null, $box = array() ) {
+		$board  = dbav_board( isset( $box['args']['board'] ) ? $box['args']['board'] : 'scuola' );
+		$labels = dbav_boards();
+		$labels = $labels[ $board ];
+
 		$result = DBAV_DB::query(
 			array(
+				'board'    => $board,
 				'status'   => 'published',
 				'per_page' => 5,
 				'page'     => 1,
@@ -46,11 +76,11 @@ class DBAV_Dashboard_Widget {
 		);
 
 		if ( empty( $result['items'] ) ) {
-			echo '<p>' . esc_html__( 'Nessun avviso pubblicato al momento.', 'db-avvisi' ) . '</p>';
+			echo '<p>' . esc_html( $labels['empty'] ) . '</p>';
 		} else {
 			echo '<ul class="dbav-widget-list">';
 			foreach ( $result['items'] as $avviso ) {
-				$url   = DBAV_Admin::url( 'dbav-avvisi', array( 'view' => (int) $avviso->id ) );
+				$url   = DBAV_Admin::view_url( $avviso );
 				$files = DBAV_DB::count_files( $avviso->id );
 
 				echo '<li style="margin:0 0 10px;padding:0 0 10px;border-bottom:1px solid #f0f0f1;">';
@@ -79,9 +109,9 @@ class DBAV_Dashboard_Widget {
 		}
 
 		echo '<p style="margin:0;display:flex;gap:8px;flex-wrap:wrap;">';
-		echo '<a class="button button-secondary" href="' . esc_url( DBAV_Admin::url( 'dbav-avvisi' ) ) . '">' . esc_html__( 'Tutti gli avvisi', 'db-avvisi' ) . '</a>';
-		if ( dbav_can_create() ) {
-			echo '<a class="button button-primary" href="' . esc_url( DBAV_Admin::url( 'dbav-nuovo' ) ) . '">' . esc_html__( 'Pubblica un avviso', 'db-avvisi' ) . '</a>';
+		echo '<a class="button button-secondary" href="' . esc_url( DBAV_Admin::board_url( $board ) ) . '">' . esc_html( $labels['all'] ) . '</a>';
+		if ( dbav_can_create( $board ) ) {
+			echo '<a class="button button-primary" href="' . esc_url( DBAV_Admin::new_url( $board ) ) . '">' . esc_html( $labels['new'] ) . '</a>';
 		}
 		echo '</p>';
 	}

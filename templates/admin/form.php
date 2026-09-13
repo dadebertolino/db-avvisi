@@ -6,7 +6,9 @@
  *
  * @var object|null $avviso   Avviso in modifica.
  * @var array       $files    Allegati esistenti.
- * @var array       $settings Impostazioni.
+ * @var array       $settings         Impostazioni.
+ * @var string      $board            Bacheca di destinazione.
+ * @var string[]    $boards_available Bacheche selezionabili dall'utente.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $is_edit  = (bool) $avviso;
+$labels   = dbav_boards();
 $max_size = DBAV_Settings::max_file_bytes();
 $accept   = '.' . implode( ',.', (array) $settings['allowed_ext'] );
 $default_expiry = '';
@@ -24,11 +27,11 @@ if ( ! $is_edit && (int) $settings['default_days'] > 0 ) {
 <div class="wrap dbav-wrap">
 
 	<div class="db-ui-page-header">
-		<h1><?php echo $is_edit ? esc_html__( 'Modifica avviso', 'db-avvisi' ) : esc_html__( 'Nuovo avviso', 'db-avvisi' ); ?></h1>
+		<h1><?php echo $is_edit ? esc_html__( 'Modifica avviso', 'db-avvisi' ) : esc_html( $labels[ $board ]['new'] ); ?></h1>
 		<div class="db-ui-actions">
-			<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::url( 'dbav-avvisi' ) ); ?>">
+			<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::board_url( $board ) ); ?>">
 				<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
-				<?php esc_html_e( 'Torna agli avvisi', 'db-avvisi' ); ?>
+				<?php echo esc_html( $labels[ $board ]['back'] ); ?>
 			</a>
 		</div>
 	</div>
@@ -79,6 +82,24 @@ if ( ! $is_edit && (int) $settings['default_days'] > 0 ) {
 					<div class="db-ui-card-header">
 						<h2><?php esc_html_e( 'Pubblicazione', 'db-avvisi' ); ?></h2>
 					</div>
+
+					<?php if ( ! $is_edit && count( $boards_available ) > 1 ) : ?>
+						<p>
+							<label class="dbav-label" for="dbav-board"><?php esc_html_e( 'Bacheca', 'db-avvisi' ); ?></label>
+							<select class="db-ui-select" id="dbav-board" name="board">
+								<?php foreach ( $boards_available as $slug ) : ?>
+									<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $board, $slug ); ?>><?php echo esc_html( $labels[ $slug ]['choice'] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</p>
+					<?php else : ?>
+						<?php if ( ! $is_edit ) : ?>
+							<input type="hidden" name="board" value="<?php echo esc_attr( $board ); ?>">
+						<?php endif; ?>
+						<?php if ( 'sindacale' === $board ) : ?>
+							<p><span class="db-ui-badge db-ui-badge-warning"><?php esc_html_e( 'Bacheca sindacale', 'db-avvisi' ); ?></span></p>
+						<?php endif; ?>
+					<?php endif; ?>
 
 					<p>
 						<label class="dbav-label" for="dbav-category"><?php esc_html_e( 'Categoria', 'db-avvisi' ); ?></label>

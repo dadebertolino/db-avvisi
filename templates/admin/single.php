@@ -11,15 +11,18 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$board  = dbav_board( $avviso->board );
+$labels = dbav_boards();
 ?>
 <div class="wrap dbav-wrap dbav-single">
 
 	<div class="db-ui-page-header">
 		<h1><?php echo esc_html( $avviso->title ); ?></h1>
 		<div class="db-ui-actions">
-			<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::url( 'dbav-avvisi' ) ); ?>">
+			<a class="db-ui-btn" href="<?php echo esc_url( DBAV_Admin::board_url( $board ) ); ?>">
 				<span class="dashicons dashicons-arrow-left-alt2" aria-hidden="true"></span>
-				<?php esc_html_e( 'Torna agli avvisi', 'db-avvisi' ); ?>
+				<?php echo esc_html( $labels[ $board ]['back'] ); ?>
 			</a>
 			<?php if ( dbav_can_edit( $avviso ) ) : ?>
 				<a class="db-ui-btn db-ui-btn-primary" href="<?php echo esc_url( DBAV_Admin::url( 'dbav-nuovo', array( 'edit' => (int) $avviso->id ) ) ); ?>">
@@ -104,6 +107,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<li>
 						<span class="dbav-details-label"><?php esc_html_e( 'Ultima modifica', 'db-avvisi' ); ?></span>
 						<strong><?php echo esc_html( DBAV_Admin::date( $avviso->updated_at ) ); ?></strong>
+					</li>
+				<?php endif; ?>
+				<?php if ( 'sindacale' === $board ) : ?>
+					<li>
+						<span class="dbav-details-label"><?php esc_html_e( 'Bacheca', 'db-avvisi' ); ?></span>
+						<span class="db-ui-badge db-ui-badge-warning"><?php esc_html_e( 'Sindacale', 'db-avvisi' ); ?></span>
 					</li>
 				<?php endif; ?>
 				<?php if ( $avviso->category ) : ?>
