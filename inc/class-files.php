@@ -281,8 +281,13 @@ class DBAV_Files {
 	 * Serve un allegato solo a utenti loggati.
 	 */
 	public static function handle_download() {
-		if ( ! is_user_logged_in() || ! dbav_can_view() ) {
+		if ( ! is_user_logged_in() ) {
 			auth_redirect();
+		}
+
+		// auth_redirect() non ferma un utente già loggato: il permesso va verificato a parte.
+		if ( ! dbav_can_view() ) {
+			wp_die( esc_html__( 'Non hai i permessi per scaricare questo allegato.', 'db-avvisi' ), '', array( 'response' => 403 ) );
 		}
 
 		$file_id = isset( $_GET['file'] ) ? (int) $_GET['file'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended

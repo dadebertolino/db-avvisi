@@ -128,7 +128,8 @@ class DBAV_Stats {
 		$avvisi = DBAV_DB::table();
 		$months = max( 1, min( 36, (int) $months ) );
 
-		$since = gmdate( 'Y-m-01 00:00:00', strtotime( '-' . ( $months - 1 ) . ' months', (int) current_time( 'timestamp' ) ) );
+		// "first day of" evita lo sforamento di fine mese (es. 31 ottobre - 11 mesi = 1 dicembre).
+		$since = gmdate( 'Y-m-01 00:00:00', strtotime( 'first day of -' . ( $months - 1 ) . ' months', (int) current_time( 'timestamp' ) ) );
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(

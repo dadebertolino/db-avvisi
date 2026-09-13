@@ -27,7 +27,32 @@ class DBAV_Settings {
 			'per_page'      => 20,
 			'notify_emails' => '',
 			'default_days'  => 0,
+			'create_cap'    => 'read',
 		);
+	}
+
+	/**
+	 * Capability selezionabili per "Chi può pubblicare", in ordine dal ruolo più ampio.
+	 *
+	 * @return array capability => etichetta.
+	 */
+	public static function create_cap_options() {
+		return array(
+			'read'              => __( 'Tutti gli utenti loggati (compresi i Sottoscrittori)', 'db-avvisi' ),
+			'edit_posts'        => __( 'Collaboratori e ruoli superiori', 'db-avvisi' ),
+			'publish_posts'     => __( 'Autori e ruoli superiori', 'db-avvisi' ),
+			'edit_others_posts' => __( 'Editori e amministratori', 'db-avvisi' ),
+		);
+	}
+
+	/**
+	 * Capability richiesta per pubblicare, validata contro l'elenco ammesso.
+	 *
+	 * @return string
+	 */
+	public static function create_cap() {
+		$cap = (string) self::get( 'create_cap', 'read' );
+		return in_array( $cap, array( 'read', 'edit_posts', 'publish_posts', 'edit_others_posts' ), true ) ? $cap : 'read';
 	}
 
 	/**
@@ -101,6 +126,11 @@ class DBAV_Settings {
 		if ( isset( $input['notify_emails'] ) ) {
 			$emails = array_filter( array_map( 'sanitize_email', preg_split( '/[\s,;]+/', (string) $input['notify_emails'] ) ), 'is_email' );
 			$clean['notify_emails'] = implode( ', ', $emails );
+		}
+
+		if ( isset( $input['create_cap'] ) ) {
+			$cap                 = (string) $input['create_cap'];
+			$clean['create_cap'] = array_key_exists( $cap, self::create_cap_options() ) ? $cap : $defaults['create_cap'];
 		}
 
 		update_option( self::OPTION, $clean );

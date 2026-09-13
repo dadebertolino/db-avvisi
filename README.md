@@ -14,11 +14,11 @@ Nato per il sito dell'**IIS Cigna-Baruffi-Garelli** di Mondovì, ma non contiene
 Il plugin aggiunge un menu **Avvisi** in bacheca, subito sotto la voce Bacheca, con tre pagine:
 
 1. **Tutti gli avvisi** — elenco a schede di ciò che è stato pubblicato, con ricerca, filtro per categoria, filtro "solo i miei" e apertura del singolo avviso. Visibile a **tutti gli utenti loggati**.
-2. **Nuovo avviso** — form di pubblicazione con titolo, testo (editor), categoria, data di scadenza facoltativa e allegati multipli. Aperto a **ogni utente loggato**; ciascuno può poi modificare o eliminare i propri avvisi.
+2. **Nuovo avviso** — form di pubblicazione con titolo, testo (editor), categoria, data di scadenza facoltativa e allegati multipli. Aperto per impostazione predefinita a **ogni utente loggato** (restringibile dalle Impostazioni); ciascuno può poi modificare o eliminare i propri avvisi.
 3. **Gestione e statistiche** — riservata agli amministratori, con tre schede:
    - **Avvisi**: tabella di tutti gli avvisi (compresi nascosti e scaduti), filtri per stato/categoria/autore, azioni singole (nascondi, fissa in alto, modifica, elimina) e azioni di gruppo.
    - **Statistiche**: numeri generali, tabella *chi ha caricato cosa* (avvisi, allegati, spazio occupato, download, letture, ultimo avviso per ogni utente), andamento mensile, distribuzione per categoria, allegati più scaricati, avvisi più letti, esportazione CSV.
-   - **Impostazioni**: categorie, limiti sugli allegati, estensioni ammesse, avvisi per pagina, scadenza proposta, email di notifica.
+   - **Impostazioni**: chi può pubblicare, categorie, limiti sugli allegati, estensioni ammesse, avvisi per pagina, scadenza proposta, email di notifica.
 
 In più, un widget **"Avvisi recenti"** nella home della bacheca mostra gli ultimi cinque avvisi a chi entra nel sito.
 
@@ -27,7 +27,7 @@ In più, un widget **"Avvisi recenti"** nella home della bacheca mostra gli ulti
 | Azione | Chi |
 |--------|-----|
 | Vedere gli avvisi e scaricare gli allegati | Qualsiasi utente **loggato** |
-| Pubblicare un avviso | Qualsiasi utente **loggato** |
+| Pubblicare un avviso | Qualsiasi utente **loggato** (predefinito), oppure solo da Collaboratore / Autore / Editore in su, a scelta nelle **Impostazioni** |
 | Modificare / eliminare un avviso | L'**autore** dell'avviso e gli amministratori |
 | Nascondere, fissare in alto, azioni di gruppo | Solo **amministratori** |
 | Statistiche, impostazioni, export CSV | Solo **amministratori** |
@@ -114,6 +114,11 @@ Tabelle create: `wp_dbav_avvisi` e `wp_dbav_files`.
 Etichette esplicite su ogni campo, `screen-reader-text` dove l'etichetta è visivamente ridondante, `aria-label` sui pulsanti a sola icona, focus visibile ereditato dal design system, nessun contenuto che si muove da solo. La tabella di gestione resta navigabile da tastiera e le conferme di eliminazione sono dialoghi nativi del browser.
 
 ## Changelog
+
+### 1.1.0
+- Nuova impostazione **Chi può pubblicare**: tutti gli utenti loggati (predefinito, come prima), oppure solo da Collaboratore, Autore o Editore in su.
+- Sicurezza: il filtro `dbav_can_view` ora vale anche per il download degli allegati (prima un utente loggato senza permesso poteva comunque scaricarli).
+- Statistiche: corretto l'andamento mensile, che in alcuni giorni di fine mese saltava il mese corrente e mostrava un mese futuro.
 
 ### 1.0.0
 - Prima versione: elenco avvisi, pubblicazione con allegati, vista singola, area di gestione con moderazione, statistiche per autore ed export CSV, widget in bacheca, allegati protetti fuori dalla Libreria media, aggiornamenti da GitHub.

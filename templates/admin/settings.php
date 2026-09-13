@@ -44,6 +44,21 @@ $server_max = wp_max_upload_size();
 
 		<div class="db-ui-card">
 			<div class="db-ui-card-header">
+				<h2><?php esc_html_e( 'Permessi', 'db-avvisi' ); ?></h2>
+			</div>
+			<p>
+				<label class="dbav-label" for="dbav-create-cap"><?php esc_html_e( 'Chi può pubblicare avvisi', 'db-avvisi' ); ?></label>
+				<select class="db-ui-select" id="dbav-create-cap" name="create_cap">
+					<?php foreach ( DBAV_Settings::create_cap_options() as $cap => $label ) : ?>
+						<option value="<?php echo esc_attr( $cap ); ?>" <?php selected( DBAV_Settings::create_cap(), $cap ); ?>><?php echo esc_html( $label ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<span class="dbav-hint"><?php esc_html_e( 'Tutti gli utenti loggati continuano a leggere gli avvisi. Chi non può più pubblicare non può nemmeno modificare o eliminare i propri avvisi: resta il controllo agli amministratori.', 'db-avvisi' ); ?></span>
+			</p>
+		</div>
+
+		<div class="db-ui-card">
+			<div class="db-ui-card-header">
 				<h2><?php esc_html_e( 'Categorie', 'db-avvisi' ); ?></h2>
 			</div>
 			<p>

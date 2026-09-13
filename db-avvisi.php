@@ -3,7 +3,7 @@
  * Plugin Name:       DB Avvisi
  * Plugin URI:        https://www.davidebertolino.it/progetti/
  * Description:       Bacheca avvisi interna: ogni utente loggato pubblica avvisi con allegati protetti, gli amministratori gestiscono, moderano e consultano le statistiche. Tutto dentro la bacheca di WordPress, niente servizi esterni.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Davide Bertolino
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'DBAV_VERSION', '1.0.0' );
+define( 'DBAV_VERSION', '1.1.0' );
 define( 'DBAV_FILE', __FILE__ );
 define( 'DBAV_DIR', plugin_dir_path( __FILE__ ) );
 define( 'DBAV_URL', plugin_dir_url( __FILE__ ) );
@@ -61,7 +61,7 @@ function dbav_can_view() {
  * @return bool
  */
 function dbav_can_create() {
-	return (bool) apply_filters( 'dbav_can_create', is_user_logged_in() && current_user_can( 'read' ) );
+	return (bool) apply_filters( 'dbav_can_create', is_user_logged_in() && current_user_can( DBAV_Settings::create_cap() ) );
 }
 
 /**

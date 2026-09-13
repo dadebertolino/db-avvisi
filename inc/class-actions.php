@@ -309,7 +309,7 @@ class DBAV_Actions {
 		check_admin_referer( 'dbav_settings' );
 
 		$input = array();
-		foreach ( array( 'categories', 'max_file_mb', 'max_files', 'per_page', 'allowed_ext', 'notify_emails', 'default_days' ) as $key ) {
+		foreach ( array( 'categories', 'max_file_mb', 'max_files', 'per_page', 'allowed_ext', 'notify_emails', 'default_days', 'create_cap' ) as $key ) {
 			if ( isset( $_POST[ $key ] ) ) {
 				$input[ $key ] = is_array( $_POST[ $key ] )
 					? array_map( 'sanitize_text_field', wp_unslash( $_POST[ $key ] ) )
